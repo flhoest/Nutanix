@@ -1,8 +1,8 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.6                      //
-	//                        (c) 2018 - F. Lhoest                              //
+	//                   Nutanix Php Framework version 0.8                      //
+	//                       (c) 2018, 2019 - F. Lhoest                         //
 	//////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -11,7 +11,7 @@
 				 /   |   \|  |  \   __\__  \  /    \|  \  \/  /
 				/    |    \  |  /|  |  / __ \|   |  \  |>    < 
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
-						\/                 \/     \/         \/
+					\/                 \/     \/         \/
 */
 
 	// ---------------------------------------------------------------------------
@@ -64,12 +64,12 @@
 
 	function nxCreateVM($clusterConnect,$vmSpecs)
 	{
-	     $API_URL="/PrismGateway/services/rest/v1/vms/";
-		 $curl = curl_init();
-		 $vNetUuid=nxGetvNetUuid($clusterConnect,$vmSpecs["netName"]);
-		 $ContainerUuid=nxGetContainerUuid($clusterConnect,$vmSpecs["containerName"]);
-		 curl_setopt($curl, CURLOPT_POST, 1);
-		 curl_setopt($curl, CURLOPT_POSTFIELDS,"
+	     	$API_URL="/PrismGateway/services/rest/v1/vms/";
+		$curl = curl_init();
+		$vNetUuid=nxGetvNetUuid($clusterConnect,$vmSpecs["netName"]);
+		$ContainerUuid=nxGetContainerUuid($clusterConnect,$vmSpecs["containerName"]);
+		curl_setopt($curl, CURLOPT_POST, 1);
+		curl_setopt($curl, CURLOPT_POSTFIELDS,"
 				 {
 					\"memoryMb\": ".$vmSpecs["mem"].",
 					\"name\": \"".$vmSpecs["name"]."\",
@@ -114,7 +114,7 @@
 
 	function nxGetVGs($clusterConnect)
 	{
-	     $API_URL="/api/nutanix/v3/volume_groups/list";
+	     	$API_URL="/api/nutanix/v3/volume_groups/list";
 		 $curl = curl_init();
 		 curl_setopt($curl, CURLOPT_POST, 1);
 		 curl_setopt($curl, CURLOPT_POSTFIELDS,"
@@ -144,7 +144,7 @@
 	
 	function nxDeleteVM($clusterConnect,$vmUuid)
 	{
-	     $API_URL="/PrismGateway/services/rest/v2.0/vms/";
+	     	$API_URL="/PrismGateway/services/rest/v2.0/vms/";
 		 $curl = curl_init();
 		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
 		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -175,7 +175,7 @@
 	
 	function nxGetVMUuid($clusterConnect,$vmName)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/vms/?include_vm_disk_config=true&include_vm_nic_config=true";
+        	$API_URL="/PrismGateway/services/rest/v2.0/vms/?include_vm_disk_config=true&include_vm_nic_config=true";
 		// Step 1 : cURL to get list of all VMs
 		
 		$curl = curl_init();
@@ -224,8 +224,7 @@
 
 	function nxGetHostName($clusterConnect,$hostUuid)
 	{
-
-        $API_URL="/PrismGateway/services/rest/v2.0/hosts/?search_string=".$hostUuid;
+        	$API_URL="/PrismGateway/services/rest/v2.0/hosts/?search_string=".$hostUuid;
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -251,7 +250,7 @@
 	
 	function nxGetvNetUuid($clusterConnect,$vNetName)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/networks/";
+	        $API_URL="/PrismGateway/services/rest/v2.0/networks/";
 		// Step 1 : cURL to get list of all vNets
 		
 		$curl = curl_init();
@@ -288,7 +287,7 @@
 
 	function nxGetvNetName($clusterConnect,$vNetUuid)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/networks/";
+        	$API_URL="/PrismGateway/services/rest/v2.0/networks/";
 		// Step 1 : cURL to get list of all vNets
 		
 		$curl = curl_init();
@@ -325,7 +324,7 @@
 	
 	function nxGetContainerUuid($clusterConnect,$ContainerName)
 	{
-        $API_URL="/PrismGateway/services/rest/v1/containers/";
+        	$API_URL="/PrismGateway/services/rest/v1/containers/";
 		// Step 1 : cURL to get list of all Containers
 		
 		$curl = curl_init();
@@ -361,7 +360,7 @@
 	
 	function nxGetVMs($clusterConnect)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/vms/";
+        	$API_URL="/PrismGateway/services/rest/v2.0/vms/";
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -386,7 +385,7 @@
 	
 	function nxGetVMDetails($clusterConnect,$uuid)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/vms/".$uuid."?include_vm_disk_config=true&include_vm_nic_config=true";
+        	$API_URL="/PrismGateway/services/rest/v2.0/vms/".$uuid."?include_vm_disk_config=true&include_vm_nic_config=true";
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -410,7 +409,7 @@
 	
 	function nxGetVMDetailsV3($clusterConnect,$uuid)
 	{
-        $API_URL="/api/nutanix/v3/vms/".$uuid;
+        	$API_URL="/api/nutanix/v3/vms/".$uuid;
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -435,7 +434,7 @@
 	function nxGetVdisks($clusterConnect,$uuid)
 	{
 		$ArrayResult=array();
-        $API_URL="/api/nutanix/v2.0/virtual_disks/";
+        	$API_URL="/api/nutanix/v2.0/virtual_disks/";
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -456,7 +455,6 @@
 		{
 			if($result->entities[$i]-> attached_vm_uuid == $uuid)
 			{
-// 				print("Disk is matching specify VM : ".$result->entities[$i]-> attached_vmname."\n");
 				$ArrayResult[$j]["attached_vmname"]=$result->entities[$i]-> attached_vmname;
 				$ArrayResult[$j]["total_capacity"]=$result->entities[$i]-> disk_capacity_in_bytes;
 				$ArrayResult[$j]["used_capacity"]=$result->entities[$i]-> stats -> controller_user_bytes;
@@ -474,7 +472,7 @@
 
 	function nxGetVMSnaps($clusterConnect,$uuid)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/snapshots/?vm_uuid=".$uuid;
+		$API_URL="/PrismGateway/services/rest/v2.0/snapshots/?vm_uuid=".$uuid;
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -498,7 +496,7 @@
 
 	function nxGetVMLocalSnaps($clusterConnect,$uuid)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/protection_domains/dr_snapshots/?full_details=true";
+        	$API_URL="/PrismGateway/services/rest/v2.0/protection_domains/dr_snapshots/?full_details=true";
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -522,7 +520,7 @@
 
 	function nxGetVMRemoteSnaps($clusterConnect,$uuid)
 	{
-        $API_URL="/PrismGateway/services/rest/v2.0/remote_sites/dr_snapshots/?full_details=true";
+        	$API_URL="/PrismGateway/services/rest/v2.0/remote_sites/dr_snapshots/?full_details=true";
 		
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
