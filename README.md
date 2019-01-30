@@ -3,7 +3,7 @@
 ```
 This documentation is under review and considered as draft!
 ```
-![Nutanix_logo](https://www.imperial.ac.uk/ImageCropToolT4/imageTool/uploaded-images/Logo_Nutanix--tojpeg_1475446675071_x2.jpg)       ![php_logo](https://7php.com/pimg/2014/01/elephpant_281_193.png)
+![Nutanix_logo](https://www.imperial.ac.uk/ImageCropToolT4/imageTool/uploaded-images/Logo_Nutanix--tojpeg_1475446675071_x2.jpg)                           ![php_logo](https://7php.com/pimg/2014/01/elephpant_281_193.png)
 
 ## Background
 
@@ -40,4 +40,24 @@ Before continuing you need to have some basic information about your environment
 The below section is a list of all existing functions in this framework.
 
 ### Index
+
+	function nxGetClusterDetails($clusterConnect)
+	function nxGetVMsCount($clusterConnect)
+	function nxCreateVM($clusterConnect,$vmSpecs)
+	function nxGetVGs($clusterConnect)
+	function nxDeleteVM($clusterConnect,$vmUuid)
+	function nxGetVMUuid($clusterConnect,$vmName)
+	function nxGetHostName($clusterConnect,$hostUuid)
+	function nxGetvNetUuid($clusterConnect,$vNetName)
+	function nxGetvNetName($clusterConnect,$vNetUuid)
+	function nxGetContainerUuid($clusterConnect,$ContainerName)
+	function nxGetVMs($clusterConnect)
+	function nxGetVMDetails($clusterConnect,$uuid)
+	function nxGetVMDetailsV3($clusterConnect,$uuid)
+	function nxGetVdisks($clusterConnect,$uuid)
+	function nxGetVMSnaps($clusterConnect,$uuid)
+	function nxGetVMLocalSnaps($clusterConnect,$uuid)
+	function nxGetVMRemoteSnaps($clusterConnect,$uuid)
+	function nxColorOutput($string)
+	function formatBytes($bytes, $decimals = 2, $system = 'metric')
 
