@@ -25,7 +25,7 @@ yum install php-cli -y
 
 Before continuing you need to have some basic information about your environment like Nutanix credentials and IP/Hostname. Once you have them, simply create a file called nxCredentials.php and set the following variable : 
 
-``` 
+```php 
 <?php
 	$clusterConnect=array(
 		"username" => "username",
