@@ -3,7 +3,7 @@
 ```
 This documentation is under review and considered as draft!
 ```
-![Nutanix_logo](https://spng.pngfly.com/20180926/foz/kisspng-nutanix-logo-brand-bild-font-datakraf-home-5babe69761eb83.8187816315379923434011.jpg)       ![php_logo](https://7php.com/pimg/2014/01/elephpant_281_193.png)
+![Nutanix_logo](https://www.imperial.ac.uk/ImageCropToolT4/imageTool/uploaded-images/Logo_Nutanix--tojpeg_1475446675071_x2.jpg)       ![php_logo](https://7php.com/pimg/2014/01/elephpant_281_193.png)
 
 ## Background
 
