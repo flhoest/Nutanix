@@ -3,7 +3,7 @@
 ```
 This documentation is under review and considered as draft!
 ```
-![Nutanix_logo](https://www.nasuni.com/wp-content/uploads/2017/06/nutanix.gif)       ![php_logo](https://7php.com/pimg/2014/01/elephpant_281_193.png)
+![Nutanix_logo](https://spng.pngfly.com/20180926/foz/kisspng-nutanix-logo-brand-bild-font-datakraf-home-5babe69761eb83.8187816315379923434011.jpg)       ![php_logo](https://7php.com/pimg/2014/01/elephpant_281_193.png)
 
 ## Background
 
