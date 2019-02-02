@@ -46,11 +46,7 @@
 
 	for($i=0;$i<count($vmuuids);$i++)
 	{
-	
-		// debug
-// 		$i=82;
-		// debug
-	
+		
 		$current=$i+1;
 		$res=nxGetVMDetails($clusterConnect,$vmuuids[$i]);
 
