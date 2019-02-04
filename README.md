@@ -32,6 +32,7 @@ Before continuing you need to have some basic information about your environment
 		"password" => "password",
 		"ip" => "0.0.0.0"
 	);
+?>
 ```
 
 ## Function's Reference
