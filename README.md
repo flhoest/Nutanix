@@ -23,7 +23,7 @@ yum install php-cli -y
 
 ## Prerequisites
 
-Before continuing you need to have some basic information about your environment like Nutanix credentials and IP/Hostname. Once you have them, simply create a file called nxCredentials.php and set the following variable : 
+Before continuing you need to have some basic information about your environment like Nutanix credentials and IP/Hostname. Once you have them, simply create a new file called nxCredentials.php from the nxCredentials.php_template file and set the following variable : 
 
 ```php 
 <?php
@@ -32,7 +32,6 @@ Before continuing you need to have some basic information about your environment
 		"password" => "password",
 		"ip" => "0.0.0.0"
 	);
-?>
 ```
 
 ## Function's Reference
