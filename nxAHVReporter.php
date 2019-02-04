@@ -135,7 +135,7 @@
 		else
 		{
 			$ipinfo=array();
-			$networkname="";
+			$networkname=array();
 			for($n=0;$n<count($nics);$n++)
 			{
 				if (isset($nics[$n]->ip_address))
@@ -153,10 +153,10 @@
 
 				// Get Network name for specific UUID
 				$networks[$n]["netName"]=nxGetvNetName($clusterConnect,$networks[$n]["uuid"]);
-				$networkname.=$networks[$n]["netName"]." ";
+				array_push($networkname, $networks[$n]["netName"]);
 			}
 			if($debug) print("IP : ".nxColorOutput(implode(", ", $ipinfo))."\n");
-			if($debug) print("Network Name : ".nxColorOutput($networkname)."\n");
+			if($debug) print("Network Name : ".nxColorOutput(implode(", ", $networkname))."\n");
 		}		
 		
 		// Get AHV based snapshots
@@ -259,7 +259,7 @@
 		$totalCPU=(int)$num_vcpu*(int)$num_cores_per_vcpu;
 
 		// Write data to file
-		file_put_contents($outputFile,$vmname.",".$vmdescription.",".$totalCPU.",".$num_vcpu.",".$num_cores_per_vcpu.",".$memory.",".$totalUsed.",".$total_bytes.",".$vgbaseinfo.",".$vgnames.",".$vgtotalsize.",".$flashmode.",".$snaps.",".$pdlocalSnapshots.",".$pdremotesnaps.",".$ipinfo.",".$networkname.",".$ahvhostplacement."\n",FILE_APPEND);
+		file_put_contents($outputFile,$vmname.",".$vmdescription.",".$totalCPU.",".$num_vcpu.",".$num_cores_per_vcpu.",".$memory.",".$totalUsed.",".$total_bytes.",".$vgbaseinfo.",".$vgnames.",".$vgtotalsize.",".$flashmode.",".$snaps.",".$pdlocalSnapshots.",".$pdremotesnaps.",".implode(" ", $ipinfo).",".implode(" ", $networkname).",".$ahvhostplacement."\n",FILE_APPEND);
 	}
 
 	$time2=time();
