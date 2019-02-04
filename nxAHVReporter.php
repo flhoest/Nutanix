@@ -92,15 +92,19 @@
 		// Get memory configuration
 		$memory=$res->memory_mb;
 		$memory=$memory/1024;
-		if($debug) print("Memory : ".nxColorOutput(($memory)." GB"));
+		if($debug) print("Memory : ".nxColorOutput(($memory)." GB\n"));
 		
 		// Get IP info
 		$nics=$res->vm_nics;
 		$networks=array();
 		
 		// Get host UUID
-		$hostuuid=$res->host_uuid;
-		$ahvhostname=nxGetHostName($clusterConnect,$hostuuid);
+
+		if (isset($res->host_uuid))
+		{
+			$hostuuid=$res->host_uuid;
+			$ahvhostname=nxGetHostName($clusterConnect,$hostuuid);	
+		}
 
 		if($vmpowerstate=="off") $ahvhostplacement="VM Not Powered On";
 		else $ahvhostplacement=$ahvhostname;
@@ -113,16 +117,20 @@
 		}
 		else
 		{
-			$ipinfo="";
+			$ipinfo=array();
 			$networkname="";
 			for($n=0;$n<count($nics);$n++)
 			{
-				$networks[$n]["ip"]=$nics[$n]->ip_address;
+				if (isset($nics[$n]->ip_address))
+				{
+					array_push($ipinfo,$nics[$n]->ip_address);
+					$networks[$n]["ip"]=$nics[$n]->ip_address;
+				} else {
+					array_push($ipinfo,"None");
+					$networks[$n]["ip"]="None";					
+				}
 				$networks[$n]["uuid"]=$nics[$n]->network_uuid;
 				
-				// Get IP Address
-				$ipinfo.=$networks[$n]["ip"]." ";
-
 				// Get associated Network UUID
 				if($debug) print("Network : ".nxColorOutput($networks[$n]["uuid"])."\n");
 
@@ -130,7 +138,7 @@
 				$networks[$n]["netName"]=nxGetvNetName($clusterConnect,$networks[$n]["uuid"]);
 				$networkname.=$networks[$n]["netName"]." ";
 			}
-			if($debug) print("IP : ".nxColorOutput($ipinfo)."\n");
+			if($debug) print("IP : ".nxColorOutput(implode(", ", $ipinfo))."\n");
 			if($debug) print("Network Name : ".nxColorOutput($networkname)."\n");
 		}		
 		
