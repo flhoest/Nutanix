@@ -53,6 +53,10 @@
 
 	$outputFile=$directory."/".$currDate."-Nutanix_Cluster-".$clustername."-VM_Report_php.csv";
 	print("Nutanix Prism Element ".nxColorOutput($clusterConnect["ip"])." will be used to collect information.\n");
+	$length=strlen("Nutanix Prism Element ".$clusterConnect["ip"]." will be used to collect information.\n");
+	for($l=0;$l<$length;$l++) print("=");
+	print("\n");
+
 	file_put_contents($outputFile,"VM Name,VM Description,Total Number of CPUs,Number of CPUs,Number of Cores per vCPU,Memory GB,Disk Usage GB, Disk Allocated GB,Number of VGs, VG Names,VG Disk Allocated GB,Flash Mode Enabled,AHV Snapshots,Local Protection Domain Snapshots,Remote Protection Domain Snapshots,IP Address/IP Addresses,Network Placement,AHV Host placement\n");
 
 	$vmuuids=nxGetVMUuid($clusterConnect,"*");
@@ -63,7 +67,7 @@
 		$current=$i+1;
 		$res=nxGetVMDetails($clusterConnect,$vmuuids[$i]);
 
-		$length=strlen("Creating reporting input for VM ".nxColorOutput($res->name)." now (".$current."/".count($vmuuids).") .....\n");
+		$length=strlen("Creating reporting input for VM ".$res->name." now (".$current."/".count($vmuuids).") .....\n");
 		for($l=0;$l<$length;$l++) print("=");
 		print("\n");
 		print("Creating reporting input for VM ".nxColorOutput($res->name)." now (".$current."/".count($vmuuids).") .....\n");
