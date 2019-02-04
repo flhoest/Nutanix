@@ -37,7 +37,7 @@
 	date_default_timezone_set('UTC');
 
 	// Enable debug mode -> chatty screen output 
-	$debug=true;
+	$debug=false;
 
 	// Specify Nutanix Cluster FQDN, User and Password
 	// This is defined in the nxCredentials.php file
@@ -63,15 +63,20 @@
 
 	for($i=0;$i<count($vmuuids);$i++)
 	{
-		
 		$current=$i+1;
 		$res=nxGetVMDetails($clusterConnect,$vmuuids[$i]);
 
-		$length=strlen("Creating reporting input for VM ".$res->name." now (".$current."/".count($vmuuids).") .....\n");
-		for($l=0;$l<$length;$l++) print("=");
-		print("\n");
+		if($debug)
+		{
+			$length=strlen("Creating reporting input for VM ".$res->name." now (".$current."/".count($vmuuids).") .....\n");
+			for($l=0;$l<$length;$l++) print("=");
+		}
 		print("Creating reporting input for VM ".nxColorOutput($res->name)." now (".$current."/".count($vmuuids).") .....\n");
-		for($l=0;$l<$length;$l++) print("=");
+		if($debug)
+		{
+			for($l=0;$l<$length;$l++) print("=");
+			print("\n");
+		}
 		
 		// Get VM Name
 		$vmname=$res->name;
@@ -203,13 +208,12 @@
 						$vgtotalsize+=$vgsize;
 						if($debug) print("There is a match for VG : ".nxColorOutput($vgnames)."\n");
 						if($debug) print("VG Size : ".nxColorOutput(($vgsize/1073741824)." GB")."\n");
-// 						var_dump($VGs->entities[$j]);
 					}
 				}
 			}
 			if($vgtotalsize) $vgtotalsize=round($vgtotalsize/1073741824,2);
 		}
-		print("\n");
+		if($debug) print("\n");
 		
 		if(!$vgroups) 
 		{
@@ -266,6 +270,6 @@
 	$elapsed=$time2-$time1;
 	
 	print("\nProcessing time is : ".nxColorOutput(date('H:i:s',$elapsed))."\n");
-	print("\nEnd of script.\n\n");
+	print("End of script.\n\n");
 
 ?>
