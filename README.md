@@ -44,6 +44,7 @@ The below section is a list of all existing functions in this framework.
 	function nxGetClusterDetails($clusterConnect)
 	function nxGetVMsCount($clusterConnect)
 	function nxCreateVM($clusterConnect,$vmSpecs)
+	function nxCreateVMSnap($clusterConnect,$VMUuid,$SnapDesc="")
 	function nxGetVGs($clusterConnect)
 	function nxDeleteVM($clusterConnect,$vmUuid)
 	function nxGetVMUuid($clusterConnect,$vmName)
