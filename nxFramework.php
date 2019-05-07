@@ -1,7 +1,7 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.8                      //
+	//                   Nutanix Php Framework version 0.9                      //
 	//                      (c) 2018, 2019 - F. Lhoest                          //
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -12,6 +12,36 @@
 				/    |    \  |  /|  |  / __ \|   |  \  |>    < 
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
 					\/                 \/     \/         \/
+						
+	// Function index in alphabetical order (total 25)
+	//------------------------------------------------
+
+	// formatBytes($bytes,$decimals=2,$system='metric')
+	// nxAttachVG($clusterConnect,$vgId,$vmId)
+	// nxCloneVG($clusterConnect,$uuid,$vgName)
+	// nxColorOutput($string)
+	// nxCreateVM($clusterConnect,$vmSpecs)
+	// nxCreateVMSnap($clusterConnect,$VMUuid,$SnapDesc="")
+	// nxDeleteVM($clusterConnect,$vmUuid)
+	// nxDeleteVg($clusterConnect,$vgUuid)
+	// nxDetachVG($clusterConnect,$vgId,$vmId)
+	// nxGetClusterDetails($clusterConnect)
+	// nxGetContainerUuid($clusterConnect,$ContainerName)
+	// nxGetHostName($clusterConnect,$hostUuid)
+	// nxGetVGDetails($clusterConnect,$vgName)
+	// nxGetVGs($clusterConnect)
+	// nxGetVMDetails($clusterConnect,$uuid)
+	// nxGetVMDetailsV3($clusterConnect,$uuid)
+	// nxGetVMLocalSnaps($clusterConnect,$uuid)
+	// nxGetVMRemoteSnaps($clusterConnect,$uuid)
+	// nxGetVMSnaps($clusterConnect,$uuid)
+	// nxGetVMUuid($clusterConnect,$vmName)
+	// nxGetVMs($clusterConnect)
+	// nxGetVMsCount($clusterConnect)
+	// nxGetVdisks($clusterConnect,$uuid)
+	// nxGetvNetName($clusterConnect,$vNetUuid)
+	// nxGetvNetUuid($clusterConnect,$vNetName)						
+												
 */
 
 	// ---------------------------------------------------------------------------
@@ -33,6 +63,7 @@
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 		$result = curl_exec($curl);
 		curl_close($curl);
+		
 		return $result;
 	}
 	
@@ -151,7 +182,7 @@
 	}
 
 	// ------------------------------------------------------------------
-	// Get list of volume groups
+	// Get list of volume groups API v3
 	// ------------------------------------------------------------------
 
 	function nxGetVGs($clusterConnect)
@@ -177,6 +208,168 @@
 
 		 curl_close($curl);
 		 return json_decode($result);
+	}
+
+	// ------------------------------------------------------------------
+	// Get specific VG info
+	// ------------------------------------------------------------------
+
+	function nxGetVGDetails($clusterConnect,$vgName)
+	{
+		// APIv3
+// 	    $API_URL="/api/nutanix/v3/volume_groups/list";
+
+	    $API_URL="/api/nutanix/v2.0/volume_groups";
+
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440/".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+		$result = curl_exec($curl);
+		curl_close($curl);
+
+		// Browse result to match $vgName
+
+		$res=json_decode($result);
+		$myVG=array();
+	
+		for($i=0;$i<count($res->entities);$i++)
+		{
+			if($res->entities[$i]->name == $vgName)
+			{
+				$myVG=$res->entities[$i];				
+			}
+		}
+
+		return ($myVG);
+	}
+
+	// ------------------------------------------------------------------
+	// Clone volume group $uuid to name $vgName
+	// ------------------------------------------------------------------
+
+	function nxCloneVG($clusterConnect,$uuid,$vgName)
+	{
+	     $API_URL="/PrismGateway/services/rest/v2.0/volume_groups/".$uuid."/clone";
+		 $curl = curl_init();
+
+		 curl_setopt($curl, CURLOPT_POST, 1);
+		 curl_setopt($curl, CURLOPT_POSTFIELDS,"
+				{
+				  \"name\": \"".$vgName."\"
+				}");
+
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $result = curl_exec($curl);
+
+		 curl_close($curl);
+		 return $result;
+	}
+
+	// ------------------------------------------------------------------
+	// Attach volume group $vgUUID to a VM $VMUUID
+	// ------------------------------------------------------------------
+
+	function nxAttachVG($clusterConnect,$vgId,$vmId)
+	{
+	     $API_URL="/PrismGateway/services/rest/v2.0/volume_groups/".$vgId."/attach";
+		 $curl = curl_init();
+
+		 curl_setopt($curl, CURLOPT_POST, 1);
+		 curl_setopt($curl, CURLOPT_POSTFIELDS,"
+				{
+					  \"operation\": \"ATTACH\",
+					  \"vm_uuid\": \"".$vmId."\"
+				}");
+
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $result = curl_exec($curl);
+// 		 print(curl_error($curl)."\n");
+
+		 curl_close($curl);
+		 return $result;
+	}
+
+
+	// ------------------------------------------------------------------
+	// Detach volume group $vgUUID to a VM $VMUUID
+	// ------------------------------------------------------------------
+
+	function nxDetachVG($clusterConnect,$vgId,$vmId)
+	{
+	     $API_URL="/PrismGateway/services/rest/v2.0/volume_groups/".$vgId."/detach";
+		 $curl = curl_init();
+
+		 curl_setopt($curl, CURLOPT_POST, 1);
+		 curl_setopt($curl, CURLOPT_POSTFIELDS,"
+				{
+					  \"operation\": \"DETACH\",
+					  \"vm_uuid\": \"".$vmId."\"
+				}");
+
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $result = curl_exec($curl);
+// 		 print(curl_error($curl)."\n");
+
+		 curl_close($curl);
+		 return $result;
+	}
+
+	// ------------------------------------------------------------------
+	// Delete Volume Group based on provided unique Uuid
+	// ------------------------------------------------------------------
+	
+	function nxDeleteVg($clusterConnect,$vgUuid)
+	{
+	     $API_URL="//PrismGateway/services/rest/v2.0/volume_groups/".$vgUuid;
+		 $curl = curl_init();
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+   		 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE"); 
+   		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL."/");
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $result = curl_exec($curl);
+		 if(curl_error($curl) != NULL)
+		 {
+		 	print(curl_error($curl));
+		 }
+
+		 curl_close($curl);
+		 return $result;
 	}
 
 
