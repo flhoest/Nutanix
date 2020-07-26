@@ -1,7 +1,7 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.9                      //
+	//                   Nutanix Php Framework version 0.91                     //
 	//                      (c) 2018, 2019 - F. Lhoest                          //
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
 					\/                 \/     \/         \/
 						
-	// Function index in alphabetical order (total 25)
+	// Function index in alphabetical order (total 30)
 	//------------------------------------------------
 
 	// formatBytes($bytes,$decimals=2,$system='metric')
@@ -22,14 +22,19 @@
 	// nxColorOutput($string)
 	// nxCreateVM($clusterConnect,$vmSpecs)
 	// nxCreateVMSnap($clusterConnect,$VMUuid,$SnapDesc="")
+	// nxDelSnaps($clusterConnect,$uuid)
 	// nxDeleteVM($clusterConnect,$vmUuid)
 	// nxDeleteVg($clusterConnect,$vgUuid)
 	// nxDetachVG($clusterConnect,$vgId,$vmId)
 	// nxGetClusterDetails($clusterConnect)
+	// nxGetContainerName($clusterConnect,$ContainerUuid)
 	// nxGetContainerUuid($clusterConnect,$ContainerName)
 	// nxGetHostName($clusterConnect,$hostUuid)
+	// nxGetSnapSize($clusterConnect,$containerName,$groupUuid)
+	// nxGetSnaps($clusterConnect)
 	// nxGetVGDetails($clusterConnect,$vgName)
 	// nxGetVGs($clusterConnect)
+	// nxGetVMContainerName($clusterConnect,$vmUuid)
 	// nxGetVMDetails($clusterConnect,$uuid)
 	// nxGetVMDetailsV3($clusterConnect,$uuid)
 	// nxGetVMLocalSnaps($clusterConnect,$uuid)
@@ -40,7 +45,7 @@
 	// nxGetVMsCount($clusterConnect)
 	// nxGetVdisks($clusterConnect,$uuid)
 	// nxGetvNetName($clusterConnect,$vNetUuid)
-	// nxGetvNetUuid($clusterConnect,$vNetName)						
+	// nxGetvNetUuid($clusterConnect,$vNetName)
 												
 */
 
@@ -311,7 +316,6 @@
 		 return $result;
 	}
 
-
 	// ------------------------------------------------------------------
 	// Detach volume group $vgUUID to a VM $VMUUID
 	// ------------------------------------------------------------------
@@ -372,7 +376,6 @@
 		 return $result;
 	}
 
-
 	// ------------------------------------------------------------------
 	// Delete VM based on provided unique Uuid
 	// ------------------------------------------------------------------
@@ -424,21 +427,24 @@
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
 		$result = curl_exec($curl);
-		print(curl_error($curl)."\n");
+// 		print(curl_error($curl)."\n");
 		curl_close($curl);
 		
 		// Step 2 : Browse result to find relevant matching VM name <-> VM Uuid
 
 		$result=json_decode($result);
+		
 		$myArray=$result -> entities;
+
 		$myOtherArray=array();
 
 		if($vmName!='*')
 		{
 			$i=0;
-			while($myArray[$i] -> name!=$vmName && $i<count($myArray))
+			while(strtolower($myArray[$i]->name)!=strtolower($vmName) && $i<count($myArray))
 			{
 				$i++;
+// 				print($myArray[$i]->name." <-> ".$myArray[$i]->uuid."\n");
 			}
 			return $myArray[$i] -> uuid;
 		}
@@ -591,6 +597,75 @@
 	}
 
 	// ---------------------------------------------------------------------------------
+	// Get Associated Uuid from specified container Name
+	// ---------------------------------------------------------------------------------
+	
+	function nxGetContainerName($clusterConnect,$ContainerUuid)
+	{
+        $API_URL="/PrismGateway/services/rest/v1/containers/";
+		// Step 1 : cURL to get list of all Containers
+		
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$result = curl_exec($curl);
+
+		curl_close($curl);
+		
+		// Step 2 : Browse result to find relevant matching vNet name <-> VM Uuid
+
+		$res=json_decode($result);
+		$myArray=$res -> entities;
+		
+		$i=0;
+		while($myArray[$i] -> containerUuid!=$ContainerUuid && $i<count($myArray))
+		{
+			$i++;
+		}
+		return $myArray[$i] -> name;
+	}
+	
+	function nxGetVMContainerName($clusterConnect,$vmUuid)
+	{
+        $API_URL="/PrismGateway/services/rest/v2.0/vms/".$vmUuid."?include_vm_disk_config=true";
+		
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$result = curl_exec($curl);
+
+		curl_close($curl);
+
+		$diskInfo=json_decode($result)->vm_disk_info;
+		
+		for($i=0;$i<count($diskInfo);$i++)
+		{
+			if($diskInfo[$i]->disk_address->device_bus == "scsi")
+			{
+				$containerName=$diskInfo[$i]->disk_address->ndfs_filepath;
+				$tmp=explode("/", $containerName);
+				return($tmp[1]);
+			} 
+		}
+		
+		return(false);
+	}
+
+	// ---------------------------------------------------------------------------------
 	// Get List of Nutanix VMs
 	// ---------------------------------------------------------------------------------
 	
@@ -724,8 +799,71 @@
 		$result = curl_exec($curl);
 		curl_close($curl);
 
-		return(json_decode($result));
+		return(json_decode($result)->entities);
 	}
+
+	// ---------------------------------------------------------------------------------
+	// Get All snapshots
+	// ---------------------------------------------------------------------------------
+
+	function nxGetSnaps($clusterConnect)
+	{
+        $API_URL="/PrismGateway/services/rest/v2.0/snapshots/";
+		
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$result = curl_exec($curl);
+		curl_close($curl);
+		$result=json_decode($result);
+
+		return($result->entities);
+		
+	}
+	
+	// ---------------------------------------------------------------------------------
+	// Get snapshot size of a VM
+	// ---------------------------------------------------------------------------------
+
+	function nxGetSnapSize($clusterConnect,$containerName,$groupUuid)
+	{
+        $API_URL="/api/nutanix/v2.0/vdisks/?path=".$containerName."/.acropolis/snapshot/".$groupUuid."/vmdisk";
+		
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$result = curl_exec($curl);
+
+		curl_close($curl);
+
+		$result=json_decode($result)->entities;
+	
+		$totalUsed=0;
+		$totalSize=0;
+		for($i=0;$i<count($result);$i++)
+		{
+// 			print("Total Size : ".formatBytes($result[$i]->total_size,2)."\n");
+// 			print("Used Size : ".formatBytes($result[$i]->used_size,2)."\n");
+			$totalUsed+=$result[$i]->used_size;
+			
+		}
+		return($totalUsed);
+	}
+	
 
 	// ---------------------------------------------------------------------------------
 	// Get number of local snapshots in protection domain for specific VM Uuid
@@ -774,7 +912,35 @@
 
 		return(json_decode($result));
 	}
+	
+	// ---------------------------------------------------------------------------------
+	// Remove specified Snapshot Uuid
+	// ---------------------------------------------------------------------------------
 
+	function nxDelSnaps($clusterConnect,$uuid)
+	{
+	     $API_URL="/PrismGateway/services/rest/v2.0/snapshots/".$uuid;
+		 $curl = curl_init();
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+   		 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE"); 
+   		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $result = curl_exec($curl);
+		 if(curl_error($curl) != NULL)
+		 {
+		 	print(curl_error($curl));
+		 }
+
+		 curl_close($curl);
+		 return $result;
+	}
+	
 	// ---------------------------------------------------------------------------
 	// Display a string in Nutanix Green!!!
 	// ---------------------------------------------------------------------------
