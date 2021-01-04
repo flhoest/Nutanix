@@ -13,7 +13,7 @@
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
 					\/                 \/     \/         \/
 						
-	// Function index in alphabetical order (total 37)
+	// Function index in alphabetical order (total 38)
 	//------------------------------------------------
 
 	// formatBytes($bytes,$decimals=2,$system='metric')
@@ -47,6 +47,7 @@
 	// nxGetvNetName($clusterConnect,$vNetUuid)
 	// nxGetvNetUuid($clusterConnect,$vNetName)
 	// nxpcApplyCategory($clusterConnect,$categories,$vmName,$clusterName,$specV)
+	// nxpcFlushCategories($clusterConnect,$vmName,$clusterName,$specV)
 	// nxpcGetCategories($clusterConnect)
 	// nxpcGetCategoryValues($clusterConnect,$categoryName)
 	// nxpcGetClusterUuid($clusterConnect,$clusterName)
