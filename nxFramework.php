@@ -261,10 +261,10 @@
 		return ($myVG);
 	}
 
-(	// ------------------------------------------------------------------
+	// ------------------------------------------------------------------
 	// Clone volume group $uuid to name $vgName
 	// ------------------------------------------------------------------
-)
+
 	function nxCloneVG($clusterConnect,$uuid,$vgName)
 	{
 	     $API_URL="/PrismGateway/services/rest/v2.0/volume_groups/".$uuid."/clone";
