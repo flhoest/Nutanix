@@ -71,6 +71,13 @@ nxGetVMsCount($clusterConnect)
 nxGetVdisks($clusterConnect,$uuid)
 nxGetvNetName($clusterConnect,$vNetUuid)
 nxGetvNetUuid($clusterConnect,$vNetName)
+nxpcApplyCategory($clusterConnect,$categories,$vmName,$clusterName,$specV)
+nxpcGetCategories($clusterConnect)
+nxpcGetCategoryValues($clusterConnect,$categoryName)
+nxpcGetClusterUuid($clusterConnect,$clusterName)
+nxpcGetSpecV($clusterConnect,$vmUuid)
+nxpcGetVMCategories($clusterConnect,$vmUuid)
+nxpcGetVMUuid($clusterConnect,$vmName)
 ````
 
 
