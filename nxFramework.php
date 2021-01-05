@@ -1,7 +1,7 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.95                     //
+	//                   Nutanix Php Framework version 0.96                     //
 	//                      (c) 2018 - 2021 - F. Lhoest                         //
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -46,15 +46,15 @@
 	// nxGetVdisks($clusterConnect,$uuid)
 	// nxGetvNetName($clusterConnect,$vNetUuid)
 	// nxGetvNetUuid($clusterConnect,$vNetName)
-	// nxpcApplyCategory($clusterConnect,$categories,$vmName,$clusterName,$specV)
-	// nxpcFlushCategories($clusterConnect,$vmName,$clusterName,$specV)
+	// nxpcApplyCategory($clusterConnect,$categories,$vmUuid,$clusterName,$specV)
+	// nxpcFlushCategories($clusterConnect,$vmUuid,$clusterName,$specV)
 	// nxpcGetCategories($clusterConnect)
 	// nxpcGetCategoryValues($clusterConnect,$categoryName)
 	// nxpcGetClusterUuid($clusterConnect,$clusterName)
 	// nxpcGetSpecV($clusterConnect,$vmUuid)
 	// nxpcGetVMCategories($clusterConnect,$vmUuid)
-	// nxpcGetVMUuid($clusterConnect,$vmName)
-													
+	// nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
+	
 */
 
 	// ---------------------------------------------------------------------------
@@ -1058,8 +1058,8 @@
 	// ----------------------------------------------------
 	// <PRISM CENTRAL> Get VM uuid from VM Name
 	// ----------------------------------------------------
-	
-	function nxpcGetVMUuid($clusterConnect,$vmName)
+
+	function nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
 	{
 	     $API_URL="/api/nutanix/v3/vms/list";
 		 $curl = curl_init();
@@ -1070,7 +1070,7 @@
 				  \"kind\": \"vm\",
 				  \"sort_attribute\": \"vm_name\",
 				  \"filter\": \"vm_name == ".$vmName."\",
-				  \"length\": 1,
+				  \"length\": 10,
 				  \"sort_order\": \"ASCENDING\",
 				  \"offset\": 0
 				}
@@ -1085,12 +1085,32 @@
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
 		$result = json_decode(curl_exec($curl));
-
 		curl_close($curl);
+
+		// Check if more than 1 result. If so, look each entry to match cluster name
+		
+		$size=count($result->entities);
+		switch (true)
+		{
+			case $size==0 :
+				print("No VM found.\n");
+				break;
+			case $size>1 :
+				print("More than 1 VM found.\n");
+				for($i=0;$i<count($result->entities);$i++)
+				{
+					if($result->entities[$i]->spec->cluster_reference->name == $clusterName) return $result->entities[$i]->metadata->uuid;
+				}
+				break;
+			case $size==1:
+				print("Only one VM found.\n");
+				return $result->entities[0]->metadata->uuid;
+				break;
+		}
 
 		return($result->entities[0]->metadata->uuid);	
 	}
-
+	
 	// ----------------------------------------------------
 	// <PRISM CENTRAL> Get Cluster uuid from Cluster Name
 	// ----------------------------------------------------
@@ -1140,15 +1160,12 @@
 	// <PRISM CENTRAL> Set VM category
 	// ----------------------------------------------------
 		
-	function nxpcApplyCategory($clusterConnect,$categories,$vmName,$clusterName,$specV)
+	function nxpcApplyCategory($clusterConnect,$categories,$vmUuid,$clusterName,$specV)
 	{
-		// 1 : Get VM uuid
-		$vmUuid=nxpcGetVMUuid($clusterConnect,$vmName);
-				
-		// 2 : Get Cluster uuid
+		// 1 : Get Cluster uuid
 		$clusterUuid=nxpcGetClusterUuid($clusterConnect,$clusterName);
 
-		// 3 : Apply new categories		
+		// 2 : Apply new categories		
 	    $API_URL="/api/nutanix/v3/batch";
 		$curl = curl_init();
 
@@ -1180,30 +1197,104 @@
 		$numItems=count($categories);
 		$i=0;
 		
+		// Turn off music, this part is ... tricky ;)
+		// you can dump the $config variable and make it nice with this site : https://codebeautify.org/jsonviewer
+
 		foreach($categories as $key => $value)
 		{
 			// Check if comma in $value, then it means many values for that key
 			if(strpos($value,","))
 			{
-				$i++;
 				$values=explode(",",$value);
 
 				$config.="\"".$key."\" : [";
 				for($j=0;$j<count($values);$j++)
 				{
-					$config.="\"".$values[$j]."\"";
+					$config.="\"".trim($values[$j])."\"";
 					if($j<count($values)-1) $config.=",";
 				}
-				$config.="],";
+
+				if($i===$numItems-1) $config.="]";
+				else $config.="],";
+
+				$i++;
 			}
 			else
 			{
 				if(++$i===$numItems) $config.="\"".$key."\" : [\"".$value."\"]\n";
-				else $config.="\"".$key."\" : [\"".$value."\"], ";
+				else $config.="\"".$key."\" : [\"".$value."\"],";
 			} 
 
 		}	
 		$config.=" \n},
+						  \"categories\": {},
+						  \"use_categories_mapping\": true
+						}
+					  }
+					}
+				  ],
+				  \"api_version\": \"3.0\"
+				}";
+
+		// Useful debug section if needed
+// 		var_dump($config);
+// 		exit();
+
+		 curl_setopt($curl, CURLOPT_POST, 1);
+		 curl_setopt($curl, CURLOPT_POSTFIELDS,$config);
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $info=curl_getinfo($curl,CURLINFO_HTTP_CODE);
+		 $result = curl_exec($curl);
+		 curl_close($curl);
+
+		// If 0 is retured all is ok
+		 return $info;
+	}
+
+	// ---------------------------------------------------
+	// <PRISM CENTRAL> Remove all categories from given VM 
+	// ---------------------------------------------------
+	
+	function nxpcFlushCategories($clusterConnect,$vmUuid,$clusterName,$specV)
+	{
+		// 1 : Get Cluster uuid
+		$clusterUuid=nxpcGetClusterUuid($clusterConnect,$clusterName);
+
+		// 2 : Apply new categories		
+	    $API_URL="/api/nutanix/v3/batch";
+		$curl = curl_init();
+
+		$config="
+				{
+				  \"execution_order\": \"NON_SEQUENTIAL\",
+				  \"action_on_failure\": \"CONTINUE\",
+				  \"api_request_list\": [
+					{
+					  \"operation\": \"PUT\",
+					  \"path_and_params\": \"/api/nutanix/v3/mh_vms/".$vmUuid."\",
+					  \"body\": {
+						\"spec\": {
+						  \"resources\": {},
+						  \"cluster_reference\": {
+							\"kind\": \"cluster\",
+							\"name\": \"".$clusterName."\",
+							\"uuid\": \"".$clusterUuid."\"
+						  }
+						},
+						\"api_version\": \"3.0\",
+						\"metadata\": {
+						  \"kind\": \"mh_vm\",
+						  \"spec_version\": ".$specV.",
+  						  \"categories_mapping\": {\n
+							},
 						  \"categories\": {},
 						  \"use_categories_mapping\": true
 						}
@@ -1226,13 +1317,12 @@
 
 		 $info=curl_getinfo($curl,CURLINFO_HTTP_CODE);
 		 $result = curl_exec($curl);
-
 		 curl_close($curl);
 
-		// If 200 is retured all is ok
+		// If 0 is retured all is ok
 		 return $info;
-	}
-	
+	}	
+		
 	// ----------------------------------------------------
 	// <PRISM CENTRAL> Get VM Specification version
 	// ----------------------------------------------------
@@ -1271,10 +1361,7 @@
 
 		return($result->api_response_list[0]->api_response->metadata->spec_version);
 	}
-	
-	
-	
-	
+		
 	// ---------------------------------------------------------------------------
 	// Display a string in Nutanix Green!!!
 	// ---------------------------------------------------------------------------
