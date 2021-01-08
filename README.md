@@ -44,7 +44,9 @@ The below section is a list of all existing functions in this framework.
 formatBytes($bytes,$decimals=2,$system='metric')
 nxAttachVG($clusterConnect,$vgId,$vmId)
 nxCloneVG($clusterConnect,$uuid,$vgName)
+nxColorBold($string)
 nxColorOutput($string)
+nxColorRed($string)
 nxCreateVM($clusterConnect,$vmSpecs)
 nxCreateVMSnap($clusterConnect,$VMUuid,$SnapDesc="")
 nxDelSnaps($clusterConnect,$uuid)
@@ -79,6 +81,7 @@ nxpcGetClusterUuid($clusterConnect,$clusterName)
 nxpcGetSpecV($clusterConnect,$vmUuid)
 nxpcGetVMCategories($clusterConnect,$vmUuid)
 nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
+nxpcGetVMs($clusterConnect)
 ````
 
 
