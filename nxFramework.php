@@ -1,7 +1,7 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.96                     //
+	//                   Nutanix Php Framework version 0.97                     //
 	//                      (c) 2018 - 2021 - F. Lhoest                         //
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -11,15 +11,17 @@
 				 /   |   \|  |  \   __\__  \  /    \|  \  \/  /
 				/    |    \  |  /|  |  / __ \|   |  \  |>    < 
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
-					\/                 \/     \/         \/
+						\/                 \/     \/         \/
 						
-	// Function index in alphabetical order (total 38)
+	// Function index in alphabetical order (total 41)
 	//------------------------------------------------
 
 	// formatBytes($bytes,$decimals=2,$system='metric')
 	// nxAttachVG($clusterConnect,$vgId,$vmId)
 	// nxCloneVG($clusterConnect,$uuid,$vgName)
+	// nxColorBold($string)
 	// nxColorOutput($string)
+	// nxColorRed($string)
 	// nxCreateVM($clusterConnect,$vmSpecs)
 	// nxCreateVMSnap($clusterConnect,$VMUuid,$SnapDesc="")
 	// nxDelSnaps($clusterConnect,$uuid)
@@ -54,7 +56,8 @@
 	// nxpcGetSpecV($clusterConnect,$vmUuid)
 	// nxpcGetVMCategories($clusterConnect,$vmUuid)
 	// nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
-	
+	// nxpcGetVMs($clusterConnect)
+		
 */
 
 	// ---------------------------------------------------------------------------
@@ -1093,17 +1096,17 @@
 		switch (true)
 		{
 			case $size==0 :
-				print("No VM found.\n");
+// 				print("No VM found.\n");
 				break;
 			case $size>1 :
-				print("More than 1 VM found.\n");
+// 				print("More than 1 VM found.\n");
 				for($i=0;$i<count($result->entities);$i++)
 				{
 					if($result->entities[$i]->spec->cluster_reference->name == $clusterName) return $result->entities[$i]->metadata->uuid;
 				}
 				break;
 			case $size==1:
-				print("Only one VM found.\n");
+// 				print("Only one VM found.\n");
 				return $result->entities[0]->metadata->uuid;
 				break;
 		}
@@ -1125,7 +1128,8 @@
 				{
 				  \"kind\": \"cluster\",
 				  \"length\": 1,
-				  \"sort_order\": \"ASCENDING\"
+				  \"sort_order\": \"ASCENDING\",
+				  \"sort_attribute\" : \"vm_name\"
 				}
 				");
 		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
@@ -1137,7 +1141,8 @@
 		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
-		$result = json_decode(curl_exec($curl))->entities;
+		$result = curl_exec($curl);
+		$result = json_decode($result)->entities;
 		curl_close($curl);
 
 		$found=FALSE;
@@ -1154,6 +1159,93 @@
 		if($found) return $uuid;
 		else return FALSE;
 
+	}
+
+	// ----------------------------------------------
+	// <PRISM CENTRAL> Get list of all VMs (AHV Only)
+	// ----------------------------------------------
+
+	function nxpcGetVMs($clusterConnect)
+	{
+// 		$dateFormat='H:i:s';
+// 		$startTS=time();
+
+		$pageSize=500;
+	
+		// First, get total number of VMs to browse Window by Window
+
+	     $API_URL="/api/nutanix/v3/vms/list";
+		 $curl = curl_init();
+
+		 curl_setopt($curl, CURLOPT_POST, 1);
+		 curl_setopt($curl, CURLOPT_POSTFIELDS,"
+				{
+			  \"kind\": \"vm\",
+			  \"length\": 1,
+			  \"offset\" : 0
+				}
+				");
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$totalVM = json_decode(curl_exec($curl))->metadata->total_matches;
+		curl_close($curl);
+
+		// Get total number of iterations
+		$pages=ceil($totalVM / $pageSize);
+
+		$VMs=array();
+
+		// Get all pages to get all VMs
+
+		for($i=0;$i<$pages;$i++)
+		{
+			$API_URL="/api/nutanix/v3/vms/list";
+			$curl = curl_init();
+
+			$offset=$i*$pageSize;
+			$config="{
+				  	\"kind\": \"vm\",
+				  	\"sort_attribute\" : \"vm_name\" ,
+				  	\"sort_order\" : \"ASCENDING\",
+				  	\"length\": ".$pageSize.",
+				  	\"offset\" : ".$offset."
+					}";
+					
+			curl_setopt($curl, CURLOPT_POST, 1);
+			curl_setopt($curl, CURLOPT_POSTFIELDS,$config);
+			curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+			curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+			curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+			$result=json_decode(curl_exec($curl))->entities;
+			curl_close($curl);
+
+			for($j=0;$j<count($result);$j++)
+			{
+				$VMs[$j+$offset]["vmname"]=$result[$j]->status->name;
+				$VMs[$j+$offset]["clustername"]=$result[$j]->spec->cluster_reference->name;
+				$VMs[$j+$offset]["power_state"]=$result[$j]->spec->resources->power_state;
+			}
+		}
+
+// 		$endTS=time();
+// 		$duration=$endTS-$startTS;
+// 		$duration=date($dateFormat,$duration);	
+// 		print("Total VMs : ".nxColorOutput($totalVM)." - Page size : ".nxColorOutput($pageSize)." - Duration : ".nxColorOutput($duration)."\n");
+
+		return ($VMs);
 	}
 
 	// ----------------------------------------------------
@@ -1369,6 +1461,24 @@
 	function nxColorOutput($string)
 	{
 		return ("\033[32m".$string."\033[0m");
+	}
+
+	// ---------------------------------------------------------------------------
+	// Display a string in red
+	// ---------------------------------------------------------------------------
+	
+	function nxColorRed($string)
+	{
+		return ("\e[1;31m".$string."\033[0m");
+	}
+
+	// ---------------------------------------------------------------------------
+	// Display a string in bold
+	// ---------------------------------------------------------------------------
+	
+	function nxColorBold($string)
+	{
+		return ("\e[1;37m".$string."\033[0m");
 	}
 
 	// ---------------------------------------------------------------------------
