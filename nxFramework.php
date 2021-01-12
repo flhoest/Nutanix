@@ -13,7 +13,7 @@
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
 						\/                 \/     \/         \/
 						
-	// Function index in alphabetical order (total 41)
+	// Function index in alphabetical order (total 42)
 	//------------------------------------------------
 
 	// formatBytes($bytes,$decimals=2,$system='metric')
@@ -56,8 +56,9 @@
 	// nxpcGetSpecV($clusterConnect,$vmUuid)
 	// nxpcGetVMCategories($clusterConnect,$vmUuid)
 	// nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
+	// nxpcGetVMforCat($clusterConnect,$categories)
 	// nxpcGetVMs($clusterConnect)
-		
+			
 */
 
 	// ---------------------------------------------------------------------------
@@ -1453,6 +1454,88 @@
 
 		return($result->api_response_list[0]->api_response->metadata->spec_version);
 	}
+
+	// -------------------------------------------------------------------------------------------------------
+	// <PRISM CENTRAL> Get VMs for specific categories
+	// IMPORTANT : 
+	// This is a OR and not a AND. It means that if any category is applied to a VM, the VM will be returned
+	// Example, if a VM My_VM got Categories Fred => ONE _AND_ Fred => TWO applied, if we filter out using this
+	// function on Fred => ONE only, the fucntion will still return the VM My_VM. If this is not what you are 
+	// aiming at, you need to do more filtering in the results afterward.
+	// -------------------------------------------------------------------------------------------------------
+	
+	function nxpcGetVMforCat($clusterConnect,$categories)	
+	{
+	     $API_URL="/api/nutanix/v3/category/query";
+		 $curl = curl_init();
+
+		// construct the params section of the payload
+
+		$numItems=count($categories);
+		$i=0;
+		$config="";
+		
+		// Turn off music, this part is ... tricky ;)
+		// you can dump the $config variable and make it nice with this site : https://codebeautify.org/jsonviewer
+
+		foreach($categories as $key => $value)
+		{
+			// Check if comma in $value, then it means many values for that key
+			if(strpos($value,","))
+			{
+				$values=explode(",",$value);
+
+				$config.="\"".$key."\" : [";
+				for($j=0;$j<count($values);$j++)
+				{
+					$config.="\"".trim($values[$j])."\"";
+					if($j<count($values)-1) $config.=",";
+				}
+
+				if($i===$numItems-1) $config.="]";
+				else $config.="],";
+
+				$i++;
+			}
+			else
+			{
+				if(++$i===$numItems) $config.="\"".$key."\" : [\"".$value."\"]\n";
+				else $config.="\"".$key."\" : [\"".$value."\"],";
+			} 
+
+		}	
+		
+		$categoryPayload=$config;
+		$payload="
+				{
+					\"group_member_offset\": 0,
+					\"group_member_count\": 500,
+					\"usage_type\": \"APPLIED_TO\",
+					\"category_filter\": {
+						\"type\": \"CATEGORIES_MATCH_ANY\",
+						\"params\": {"
+						.$categoryPayload.
+						"}
+					},
+					\"api_version\": \"3.1.0\"
+				}";
+
+		 curl_setopt($curl, CURLOPT_POST, 1);
+		 curl_setopt($curl, CURLOPT_POSTFIELDS,$payload);
+		 curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		 curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		 curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		 curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		 $result = json_decode(curl_exec($curl));
+		 curl_close($curl);
+
+		return($result->results[0]->kind_reference_list);
+	}
 		
 	// ---------------------------------------------------------------------------
 	// Display a string in Nutanix Green!!!
@@ -1482,7 +1565,7 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Display size (bytes) in human redable format
+	// Display size (bytes) in human readable format
 	// ---------------------------------------------------------------------------
 	
 	function formatBytes($bytes, $decimals = 2, $system = 'metric')
