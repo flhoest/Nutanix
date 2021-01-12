@@ -81,6 +81,7 @@ nxpcGetClusterUuid($clusterConnect,$clusterName)
 nxpcGetSpecV($clusterConnect,$vmUuid)
 nxpcGetVMCategories($clusterConnect,$vmUuid)
 nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
+nxpcGetVMforCat($clusterConnect,$categories)
 nxpcGetVMs($clusterConnect)
 ````
 
