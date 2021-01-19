@@ -1,7 +1,7 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.97                     //
+	//                   Nutanix Php Framework version 0.98                     //
 	//                      (c) 2018 - 2021 - F. Lhoest                         //
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
 					\/                 \/     \/         \/
 						
-	// Function index in alphabetical order (total 42)
+	// Function index in alphabetical order (total 43)
 	//------------------------------------------------
 
 	// formatBytes($bytes,$decimals=2,$system='metric')
@@ -49,6 +49,7 @@
 	// nxGetvNetName($clusterConnect,$vNetUuid)
 	// nxGetvNetUuid($clusterConnect,$vNetName)
 	// nxpcApplyCategory($clusterConnect,$categories,$vmUuid,$clusterName,$specV)
+	// nxpcCreateCategory($clusterConnect,$categories)
 	// nxpcFlushCategories($clusterConnect,$vmUuid,$clusterName,$specV)
 	// nxpcGetCategories($clusterConnect)
 	// nxpcGetCategoryValues($clusterConnect,$categoryName)
@@ -58,7 +59,7 @@
 	// nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
 	// nxpcGetVMforCat($clusterConnect,$categories)
 	// nxpcGetVMs($clusterConnect)
-			
+				
 */
 
 	// ---------------------------------------------------------------------------
@@ -1330,8 +1331,6 @@
 				}";
 
 		// Useful debug section if needed
-// 		var_dump($config);
-// 		exit();
 
 		 curl_setopt($curl, CURLOPT_POST, 1);
 		 curl_setopt($curl, CURLOPT_POSTFIELDS,$config);
@@ -1536,7 +1535,117 @@
 
 		return($result->results[0]->kind_reference_list);
 	}
-		
+	
+	// -------------------------------------------------
+	// Functions creating categories from array variable
+	// -------------------------------------------------
+
+	function nxpcCreateCategory($clusterConnect,$categories)
+	{
+		// Sub function creating a category name
+		function createName($clusterConnect,$name)
+		{
+			// $name must be a string
+			
+			$API_URL="/api/nutanix/v3/categories/".rawurlencode($name);
+			$payload="
+				{
+				  \"api_version\": \"3.1.0\",
+				  \"description\": \"API Created\",
+				  \"capabilities\": 
+				  		{
+							\"cardinality\": 10
+				  		},
+				  \"name\": \"".$name."\"
+				}";				
+
+			$curl = curl_init();
+			curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
+			curl_setopt($curl, CURLOPT_POSTFIELDS,$payload);
+
+			curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+			curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+			curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+			$result = json_decode(curl_exec($curl));
+			curl_close($curl);
+			return ($result);
+		}
+
+		// Sub function creating a category value
+		function createVal($clusterConnect,$cat)
+		{
+			// $cat must be of the following format : array("name" => "value");
+			
+			$name=array_keys($cat)[0];
+			$value=$cat[$name];
+			
+			$API_URL="/api/nutanix/v3/categories/".rawurlencode($name)."/".rawurlencode($value);
+	
+			$payload="
+				{
+				  \"value\": \"".$value."\",
+				  \"api_version\": \"3.1.0\"
+				}";
+				
+			$curl = curl_init();
+			curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
+			curl_setopt($curl, CURLOPT_POSTFIELDS,$payload);
+
+			curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+			curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+			curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+			$result = json_decode(curl_exec($curl));
+			curl_close($curl);
+			return ($result);
+		}
+
+		// Loop thru array 
+		foreach ($categories as $name => $value)
+		{
+			// First create category $name if it exist it does not matter
+			createName($clusterConnect,$name);
+
+			// Check if multiple values
+			$v=$value;
+			$n=$name;
+
+			if(strpos($v,","))
+			{
+				$trimLine=trim($v," \t\n\r\0\x0B"); 
+				$tmp=explode(",",$trimLine);
+				$tmp=array_filter($tmp);
+				
+				for($j=0;$j<count($tmp);$j++)
+				{
+					$cat=array($n => $tmp[$j]);
+					print("Creating ".nxColorOutput($n)." => ".nxColorOutput($tmp[$j])."\n");
+					createVal($clusterConnect,$cat);
+				}
+			}
+			else
+			{
+				$v=$value;
+				$n=$name;					
+				print("Creating ".nxColorOutput($n)." => ".nxColorOutput($v)."\n");
+
+				$cat=array("$n"=>$v);
+				createVal($clusterConnect,$cat);
+			} 
+		}
+	}
+			
 	// ---------------------------------------------------------------------------
 	// Display a string in Nutanix Green!!!
 	// ---------------------------------------------------------------------------
