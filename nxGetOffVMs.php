@@ -2,7 +2,7 @@
 
 	include_once('nxFramework.php');	
 	
-  // Your Prism Central credentials
+  	// Your Prism Central credentials
 	$clusterConnect=array(
 		"username" => "username",
 		"password" => "password",
