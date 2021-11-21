@@ -1,7 +1,7 @@
 <?php
 
 	//////////////////////////////////////////////////////////////////////////////
-	//                   Nutanix Php Framework version 0.98                     //
+	//                   Nutanix Php Framework version 0.993                    //
 	//                      (c) 2018 - 2021 - F. Lhoest                         //
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -11,9 +11,9 @@
 				 /   |   \|  |  \   __\__  \  /    \|  \  \/  /
 				/    |    \  |  /|  |  / __ \|   |  \  |>    < 
 				\____|__  /____/ |__| (____  /___|  /__/__/\_ \
-					\/                 \/     \/         \/
+						\/                 \/     \/         \/
 						
-	// Function index in alphabetical order (total 43)
+	// Function index in alphabetical order (total 46)
 	//------------------------------------------------
 
 	// formatBytes($bytes,$decimals=2,$system='metric')
@@ -32,6 +32,8 @@
 	// nxGetContainerName($clusterConnect,$ContainerUuid)
 	// nxGetContainerUuid($clusterConnect,$ContainerName)
 	// nxGetHostName($clusterConnect,$hostUuid)
+	// nxGetLCMVersion($clusterConnect)
+	// nxGetSWVersions($clusterConnect,$filter)
 	// nxGetSnapSize($clusterConnect,$containerName,$groupUuid)
 	// nxGetSnaps($clusterConnect)
 	// nxGetVGDetails($clusterConnect,$vgName)
@@ -54,12 +56,13 @@
 	// nxpcGetCategories($clusterConnect)
 	// nxpcGetCategoryValues($clusterConnect,$categoryName)
 	// nxpcGetClusterUuid($clusterConnect,$clusterName)
+	// nxpcGetOffVMs($clusterConnect)
 	// nxpcGetSpecV($clusterConnect,$vmUuid)
 	// nxpcGetVMCategories($clusterConnect,$vmUuid)
 	// nxpcGetVMUuid($clusterConnect,$vmName,$clusterName)
 	// nxpcGetVMforCat($clusterConnect,$categories)
 	// nxpcGetVMs($clusterConnect)
-				
+						
 */
 
 	// ---------------------------------------------------------------------------
@@ -955,6 +958,90 @@
 	
 	// -----------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------
+	//                       LCM API Specific functions
+	// -----------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------
+	
+	// ---------------------------------------------------------------------------------
+	// Get various software version deployed from LCM API
+	// ---------------------------------------------------------------------------------
+
+	function nxGetSWVersions($clusterConnect,$filter)
+	{
+			$API_URL="/lcm/v1.r0.b1/resources/entities/list";
+	
+/*			Available filters : 	
+	
+ 				  \"filter\": \"entity_type==software\"
+
+ 				  \"filter\": \"entity_class==Core Cluster\"
+ 				  \"filter\": \"entity_class==Hypervisor\"
+ 				  \"filter\": \"entity_class==LICENSING SERVICE\"
+
+   				  \"filter\": \"entity_model==AOS\"
+   				  \"filter\": \"entity_model==NCC\"
+   				  \"filter\": \"entity_model==Foundation\"
+   				  \"filter\": \"entity_model==Foundation Platforms\"
+   				  \"filter\": \"entity_model==Licensing\"
+   				  \"filter\": \"entity_model==File Server\"
+   				  \"filter\": \"entity_model==PC\"
+
+   				  For LCM version :  /lcm/v1.r0.b1/resources/status
+   				  
+   				  "framework_version": {
+   				  "local_version": "2.4.3.26792",
+   				  "remote_version": "2.4.3.26792",
+   				  "update_needed": false
+*/
+			$payload="
+				{
+ 				  \"filter\": ".$filter."
+ 				}";
+				
+			$curl = curl_init();
+			curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+			curl_setopt($curl, CURLOPT_POSTFIELDS,$payload);
+
+			curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+			curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+			curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+			curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+			$result = json_decode(curl_exec($curl));
+			curl_close($curl);
+			return $result;
+	}
+
+	// ---------------------------------------------------------------------------------
+	// Get LCM version
+	// ---------------------------------------------------------------------------------
+	
+	function nxGetLCMVersion($clusterConnect)
+	{
+        $API_URL="/lcm/v1.r0.b1/resources/status";
+		
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$result = curl_exec($curl);
+		curl_close($curl);
+
+		return json_decode($result)->data->framework_version->local_version;
+	}		
+	
+	// -----------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------
 	//                       Prism Central Specific functions
 	// -----------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------
@@ -1415,6 +1502,41 @@
 		 return $info;
 	}	
 		
+	// -----------------------------------
+	// <PRISM CENTRAL> Get powered off VM 
+	// -----------------------------------
+	
+	function nxpcGetOffVMs($clusterConnect)
+	{
+		$API_URL="/api/nutanix/v3/vms/list";
+		$curl = curl_init();
+
+		curl_setopt($curl, CURLOPT_POST, 1);
+		curl_setopt($curl, CURLOPT_POSTFIELDS,"
+			{
+				\"kind\": \"vm\",
+  				\"filter\": \"power_state == off\",
+  				\"length\" : 500
+
+			}"				
+		);
+
+		curl_setopt($curl, CURLOPT_USERPWD, $clusterConnect["username"].":".$clusterConnect["password"]);
+		curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($curl, CURLOPT_URL, "https://".$clusterConnect["ip"].":9440".$API_URL);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+		$result = json_decode(curl_exec($curl));
+		curl_close($curl);
+
+		return($result->entities);
+
+	}
+	
 	// ----------------------------------------------------
 	// <PRISM CENTRAL> Get VM Specification version
 	// ----------------------------------------------------
@@ -1690,6 +1812,5 @@
 		$factor = floor((strlen($bytes) - 1) / 3);
 		return sprintf("%.{$decimals}f %s", $bytes / pow($mod, $factor), $units[$system][$factor]);
 	}
-
 
 ?>
