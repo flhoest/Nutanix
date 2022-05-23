@@ -19,13 +19,13 @@
 	// =====================
 
  	$clusters=array(
- 						0 => array(	"username" => "username",
- 									"password" => "password",
- 									"ip" => "192.168.1.1"),
- 						1 => array(	"username" => "username",
- 									"password" => "password",
- 									"ip" => "192.168.1.2"),
- 					);
+ 			0 => array(	"username" => "username",
+ 					"password" => "password",
+ 					"ip" => "192.168.1.1"),
+ 			1 => array(	"username" => "username",
+ 					"password" => "password",
+ 					"ip" => "192.168.1.2")
+ 	);
 
 	// -----------------------------------------------------
 	// Main entry point
